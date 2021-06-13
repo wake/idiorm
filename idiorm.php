@@ -1046,7 +1046,7 @@
         /**
          * Add a RAW JOIN source to the query
          */
-        public function raw_join($table, $constraint, $table_alias, $parameters = array()) {
+        public function raw_join($table, $constraints, $table_alias, $parameters = array()) {
             // Add table alias if present
             if (!is_null($table_alias)) {
                 $table_alias = $this->_quote_identifier($table_alias);
@@ -1056,14 +1056,35 @@
             $this->_values = array_merge($this->_values, $parameters);
 
             // Build the constraint
-            if (is_array($constraint)) {
-                list($first_column, $operator, $second_column) = $constraint;
-                $first_column = $this->_quote_identifier($first_column);
-                $second_column = $this->_quote_identifier($second_column);
-                $constraint = "{$first_column} {$operator} {$second_column}";
+            if (is_array($constraints)) {
+				
+				$multipleConstraints = false;
+				
+				foreach ($constraints as $constraint)
+					$multipleConstraints = is_array ($constraint) ? true : $multipleConstraints;
+
+				if (! $multipleConstraints) {
+					list($first_column, $operator, $second_column) = $constraints;
+					$first_column = $this->_quote_identifier($first_column);
+					$second_column = $this->_quote_identifier($second_column);
+					$constraints = "{$first_column} {$operator} {$second_column}";
+				}
+				
+				else {
+					$multipleConstraints = [];
+					
+					foreach ($constraints as $constraint) {
+						list($first_column, $operator, $second_column) = $constraints;
+						$first_column = $this->_quote_identifier($first_column);
+						$second_column = $this->_quote_identifier($second_column);
+						$multipleConstraints[] = "{$first_column} {$operator} {$second_column}";
+					}
+					
+					$constraints = implode (' AND ', $multipleConstraints);
+				}
             }
 
-            $this->_join_sources[] = "{$table} ON {$constraint}";
+            $this->_join_sources[] = "{$table} ON {$constraints}";
             return $this;
         }
 
